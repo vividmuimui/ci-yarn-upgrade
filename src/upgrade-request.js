@@ -2,6 +2,7 @@ import _ from "lodash";
 import hash from "sha.js";
 import fs from "mz/fs";
 import path from "path";
+import giturl from "git-url-parse";
 
 import Yarnpkg from "./yarnpkg";
 import Git from "./git";
@@ -92,7 +93,13 @@ function addTargetFiles(LOG, options, git) {
 
 function selectPushPromise(LOG, options, git, remote, branch) {
     if (options.execute) {
-        return git.push(remote, branch);
+        let remoteName = "github-url-with-token";
+        return git.remoteurl(remote)
+            .then(remoteUrl => giturl(remoteUrl))
+            .then(url => `https://${options.token}:x-oauth-basic@${url.source}${url.pathname}`) // https://<token>:x-oauth-basic@github.com/owner/repo.git
+            .then(urlWithToken => git.addRemote(remoteName, urlWithToken))
+            .then(() => git.push(remoteName, branch))
+            .then(() => git.removeRemote(remoteName));
     }
     LOG("`git push` is skipped because --execute is not specified.");
     return Promise.resolve();
