@@ -7,6 +7,7 @@ import Yarnpkg from "./yarnpkg";
 import Git from "./git";
 import GitHub from "./github";
 import rpj from "./promise/read-package-json";
+import giturl from "git-url-parse";
 
 function findOutdatedDeps(LOG, out) {
     LOG("Find some outdated dependencies.");
@@ -90,9 +91,14 @@ function addTargetFiles(LOG, options, git) {
     return git.add("yarn.lock");
 }
 
-function selectPushPromise(LOG, options, git, remote, branch) {
+function selectPushPromise(LOG, options, git, branch) {
     if (options.execute) {
-        return git.push(remote, branch);
+        let remoteName = "github-url-with-token";
+        return git.remoteurl("origin")
+            .then(originUrl => `https://${options.token}:x-oauth-basic@${giturl(originUrl).source}${giturl(originUrl).pathname}`)
+            .then(url => git.addRemote(remoteName, url))
+            .then(() => git.push(remoteName, branch))
+            .then(() => git.removeRemote(remoteName));
     }
     LOG("`git push` is skipped because --execute is not specified.");
     return Promise.resolve();
@@ -133,7 +139,7 @@ export default function (options) {
         .then(([newBranch, diff]) => git.checkout("-").then(() => ([newBranch, diff])))
         .then(([newBranch, diff]) => git.currentBranch().then(baseBranch => [baseBranch, newBranch, diff]))
         .then(([baseBranch, newBranch, diff]) =>
-            selectPushPromise(LOG, options, git, "origin", newBranch)
+            selectPushPromise(LOG, options, git, newBranch)
                 .then(() => [baseBranch, newBranch, diff]))
         .then(([baseBranch, newBranch, diff]) => git.remoteurl("origin")
             .then(remote => [new GitHub(options, remote), baseBranch, newBranch, diff]))

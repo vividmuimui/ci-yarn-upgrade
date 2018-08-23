@@ -58,6 +58,14 @@ export default class {
         return this.run(["push", remote, branch]);
     }
 
+    addRemote(name, url) {
+        return this.run(["remote", "add", name, url]);
+    }
+
+    removeRemote(name) {
+        return this.run(["remote", "remove", name]);
+    }
+
     remoteurl(remote) {
         return this.run(["remote", "get-url", "--push", remote]).then(out => {
             return out.stdout.trim();
