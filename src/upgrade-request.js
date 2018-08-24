@@ -93,13 +93,26 @@ function addTargetFiles(LOG, options, git) {
 
 function selectPushPromise(LOG, options, git, branch) {
     if (options.execute) {
-        let gitUrl = giturl(git.remoteurl("origin"));
-        let url = `https://${options.token}:x-oauth-basic@${giturl.pathname}`;
-        let remote = "github-url-with-token";
+        // let gitUrl = git.remoteurl("origin").then(remote => giturl(remote));
+        // let url = `https://${options.token}:x-oauth-basic@${gitUrl.toString("https")}`;
+        // let remote = "github-url-with-token";
 
-        git.addRemote(remote, url);
-        git.push(remote, branch);
-        return git.removeRemote(remote);
+        // git.addRemote(remote, url);
+        // // git.push(remote, branch);
+        // // return git.removeRemote(remote);
+
+        let remoteName = "github-url-with-token";
+        // git.remoteurl("origin")
+        //     .then(remote => giturl(remote)
+        //         .then(gitUrl => `https://${options.token}:x-oauth-basic@${gitUrl.pathname}`)
+        //         .then(url => git.addRemote(remoteName, url))
+        //     );
+        return git.remoteurl("origin")
+            .then(remote => `https://${options.token}:x-oauth-basic@${giturl(remote).source}${giturl(remote).pathname}`)
+            .then(url => git.addRemote(remoteName, url)
+                .then(() => git.push(remoteName, branch))
+                .then(() => git.removeRemote(remoteName))
+            );
     }
     LOG("`git push` is skipped because --execute is not specified.");
     return Promise.resolve();
